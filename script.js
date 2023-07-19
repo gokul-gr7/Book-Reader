@@ -1,77 +1,71 @@
-console.log("working");
+$(document).ready(function() {
+    console.log("working");
 
-const pdfFiles = [
-    { name: 'javascript', url: './asset/JavaScript.pdf' },
-    { name: 'html', url: './asset/html.pdf' },
-    { name: 'java', url: './asset/java.pdf' },
-    { name: 'python', url: './asset/python.pdf' },
-    { name: 'BootStrap', url: './bootstrap_tutorial.pdf' },
-  // Add more PDF files here
-];
+    const pdfFiles = [
+      { name: 'javascript', url: './asset/JavaScript.pdf' },
+      { name: 'html', url: './asset/html.pdf' },
+      { name: 'java', url: './asset/java.pdf' },
+      { name: 'python', url: './asset/python.pdf' },
+      { name: 'BootStrap', url: './asset/bootstrap_tutorial.pdf' },
+    ];
 
-console.log("hello");
+    console.log("hello");
 
-window.onload = displayPDFList;
+    function displayPDFList() {
+      const pdfList = $('#pdfList');
 
-function displayPDFList() {
-  const pdfList = document.getElementById('pdfList');
+      pdfFiles.forEach(file => {
+        const listItem = $('<li></li>');
+        const link = $('<a href="#">' + file.name + '</a>');
 
-  pdfFiles.forEach(file => {
-    const listele = document.createElement('li');
-    const link = document.createElement('a');
+        link.on('click', function () {
+          openFile(file.url);
+        });
 
-    link.href = "#";
-    link.textContent = file.name;
-    link.addEventListener('click', function () {
-      openFile(file.url);
-    });
+        listItem.append(link);
+        pdfList.append(listItem);
+      });
+    }
+    let currentPdf = null;
 
-    listele.appendChild(link);
-    pdfList.appendChild(listele);
+    async function openFile(url) {
+      const pdfUrl = url;
+      const container = $('#pdfContainer');
+
+      if (currentPdf) {
+        currentPdf.destroy();
+        currentPdf = null;
+        container.empty();
+      }
+
+      const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+      currentPdf = pdf;
+      const numPages = pdf.numPages;
+
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+
+        const scale = 1.5;
+        const viewport = page.getViewport({ scale });
+
+        const canvas = $('<canvas></canvas>');
+        canvas.attr('width', viewport.width);
+        canvas.attr('height', viewport.height);
+        container.append(canvas);
+
+        const context = canvas.get(0).getContext('2d');
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+
+        await page.render(renderContext).promise;
+      }
+    }
+
+    function clearContainer(container) {
+      container.empty();
+    }
+
+    window.onload = displayPDFList;
   });
-}
-
-let currentPdf = null;
-
-async function openFile(url) {
-  const pdfUrl = url;
-  const container = document.getElementById('pdfContainer');
-  
-  // Clear the current PDF if any
-  if (currentPdf) {
-    currentPdf.destroy();
-    currentPdf = null;
-    clearContainer(container);
-  }
-
-  // Asynchronous function to load and render the PDF
-  const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-  currentPdf = pdf;
-  const numPages = pdf.numPages;
-
-  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-
-    const scale = 1.5; // Adjust the scale as needed
-    const viewport = page.getViewport({ scale });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    container.appendChild(canvas);
-
-    const context = canvas.getContext('2d');
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport
-    };
-
-    await page.render(renderContext).promise;
-  }
-}
-
-function clearContainer(container) {
-  while (container.firstChild) {
-    container.firstChild.remove();
-  }
-}
